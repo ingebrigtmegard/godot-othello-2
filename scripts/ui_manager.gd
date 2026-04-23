@@ -12,36 +12,40 @@ signal restart_requested
 signal pass_requested
 
 func _ready():
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	restart_button.pressed.connect(_on_restart_pressed)
 	pass_button.pressed.connect(_on_pass_pressed)
 	restart_button.visible = false
 	pass_button.visible = false
 	message_label.visible = false
-	score_label.anchors_preset = 5 # TOP_WIDE
-	score_label.offset_top = 10
-	score_label.offset_bottom = 40
-	score_label.offset_left = 0
-	score_label.offset_right = 1152
-	turn_label.anchors_preset = 14 # CENTER
-	turn_label.offset_left = -100
-	turn_label.offset_top = -25
-	turn_label.offset_right = 100
-	turn_label.offset_bottom = 25
-	message_label.anchors_preset = 14 # CENTER
-	message_label.offset_left = -100
-	message_label.offset_top = -25
-	message_label.offset_right = 100
-	message_label.offset_bottom = 25
+
+	# Score Label: Centered horizontally above the board (X=400, Y=30)
+	score_label.anchors_preset = 0 # TOP_LEFT
+	score_label.position = Vector2(300, 30)
+
+	# Turn Label: Centered horizontally below the board (X=400, Y=580)
+	turn_label.anchors_preset = 0 # TOP_LEFT
+	turn_label.position = Vector2(300, 580)
+
+	# Message Label: Centered horizontally
+	message_label.anchors_preset = 0 # TOP_LEFT
+	message_label.position = Vector2(300, 300)
+
+	# Restart Button: CENTER
 	restart_button.anchors_preset = 14 # CENTER
 	restart_button.offset_left = -75
 	restart_button.offset_top = -25
 	restart_button.offset_right = 75
 	restart_button.offset_bottom = 25
+
+	# Pass Button: BOTTOM_RIGHT
 	pass_button.anchors_preset = 10 # BOTTOM_RIGHT
 	pass_button.offset_left = -80
 	pass_button.offset_top = -40
 	pass_button.offset_right = -20
 	pass_button.offset_bottom = -20
+	pass_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	pass_button.grow_vertical = Control.GROW_DIRECTION_BOTH
 
 func update_scores(black: int, white: int):
 	score_label.text = "Black: %d  |  White: %d" % [black, white]

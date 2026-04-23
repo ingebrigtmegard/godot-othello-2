@@ -134,6 +134,7 @@ func switch_turn():
 		message_ready = true
 		current_player = next_player
 		valid_moves = next_moves
+		board.valid_moves_changed.emit(next_moves)
 		ui_manager.update_turn("White" if current_player == WHITE else "Black")
 		ui_manager.set_pass_button_visible(valid_moves.size() == 0)
 
@@ -143,6 +144,7 @@ func switch_turn():
 
 	current_player = next_player
 	valid_moves = next_moves
+	board.valid_moves_changed.emit(next_moves)
 	ui_manager.update_turn("White" if current_player == WHITE else "Black")
 	ui_manager.set_pass_button_visible(valid_moves.size() == 0)
 

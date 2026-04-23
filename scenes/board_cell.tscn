@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cucx07yyehngf"]
+
+[ext_resource type="Script" uid="uid://dm85ait7xxuro" path="res://scripts/board_cell.gd" id="1_b2452"]
+
+[node name="BoardCell" type="Button" unique_id=114281330]
+script = ExtResource("1_b2452")
