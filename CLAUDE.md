@@ -33,6 +33,12 @@ addons/godot_mcp/           # MCP Pro addon — AI-assisted editor tools
 - `MCPInputService` — handles input injection into the game
 - `MCPGameInspector` — exposes game state for AI inspection
 
+## Version Control
+
+- **Git**: Managed via Git.
+- **GitHub**: The project is stored in a remote GitHub repository.
+- **Commit Policy**: All changes must be saved with informative, concise commit messages that describe the *why* of the change (e.g., `fix: resolve race condition in turn switching` instead of `update main.gd`).
+
 ## MCP Connection
 
 The `godot_mcp` addon (MCP Pro v1.12.0) provides AI-assisted development through a WebSocket server that runs inside the Godot editor.
