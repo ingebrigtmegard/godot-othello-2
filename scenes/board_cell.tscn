@@ -1,6 +1,22 @@
-[gd_scene format=3 uid="uid://cucx07yyehngf"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://dm85ait7xxuro" path="res://scripts/board_cell.gd" id="1_b2452"]
+[ext_resource type="Script" path="res://scripts/board_cell.gd" id="1"]
 
-[node name="BoardCell" type="Button" unique_id=114281330]
-script = ExtResource("1_b2452")
+[node name="BoardCell" type="Button"]
+layout_mode = 1
+script = ExtResource("1")
+
+[node name="PieceVisual" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -25.0
+offset_top = -25.0
+offset_right = 25.0
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1

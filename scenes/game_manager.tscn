@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://jv2ht8ayl68w"]
+
+[ext_resource type="Script" uid="uid://dc84tplx7vhmv" path="res://scripts/game_manager.gd" id="1_oo155"]
+[ext_resource type="Script" uid="uid://cigyb46xr2fyc" path="res://scripts/board.gd" id="1_udu3i"]
+[ext_resource type="Script" uid="uid://mgop6webmfls" path="res://scripts/ai_controller.gd" id="2_oo155"]
+[ext_resource type="Script" uid="uid://bdvjxhtxuo6bp" path="res://scripts/ui_manager.gd" id="3_eaq8r"]
+
+[node name="GameManager" type="Control" unique_id=1161248033]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_oo155")
+
+[node name="Board" type="Node2D" parent="." unique_id=1300705040]
+script = ExtResource("1_udu3i")
+
+[node name="AIController" type="Node" parent="." unique_id=105594629]
+script = ExtResource("2_oo155")
+
+[node name="UIManager" type="Control" parent="." unique_id=1108945780]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1152.0
+offset_bottom = 648.0
+script = ExtResource("3_eaq8r")

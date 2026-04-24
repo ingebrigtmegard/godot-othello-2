@@ -1,7 +1,5 @@
 extends Node
 
-const GameState = preload("res://scripts/game_state.gd")
-
 # --- State ---
 var white_ai_enabled: bool = true
 

@@ -1,4 +1,5 @@
 extends RefCounted
+class_name GameState
 
 var board: Array = []
 var board_size: int
