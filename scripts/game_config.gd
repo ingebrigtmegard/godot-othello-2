@@ -7,3 +7,4 @@ class_name GameConfig
 @export var board_size: int = 8
 @export var black_color: Color = Color(0.1, 0.1, 0.1)
 @export var white_color: Color = Color(0.95, 0.95, 0.95)
+@export var ai_depth: int = 4

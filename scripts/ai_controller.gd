@@ -13,54 +13,50 @@ func choose_ai_move(player: int, board: Node) -> Dictionary:
 	if moves.is_empty():
 		return {}
 
-	var opp: int = GameConstants.WHITE if player == GameConstants.BLACK else GameConstants.BLACK
-
-	# Corner positions (most valuable)
-	var corners = [Vector2i(0,0), Vector2i(7,0), Vector2i(0,7), Vector2i(7,7)]
-	# Positions adjacent to corners (dangerous)
-	var corner_adjacent = [
-		Vector2i(1,0), Vector2i(0,1),
-		Vector2i(6,0), Vector2i(7,1),
-		Vector2i(0,6), Vector2i(1,7),
-		Vector2i(6,7), Vector2i(7,6)
-	]
-
+	var depth = board.config.ai_depth if board.config else 4
 	var best_move: Dictionary = moves[0]
-	var best_score: float = -999999
 
-	for move in moves:
-		var pos: Vector2i = move.pos
-		var score: float = 0.0
+	# Create a single simulation state to avoid massive allocations
+	var sim_state = GameState.new(current_state.board, current_state.board_size)
 
-		# 1. Count pieces flipped (more is better)
-		score += move.flips.size() * 2.0
+	# Sort moves to improve Alpha-Beta pruning efficiency
+	_sort_moves(moves)
 
-		# 2. Corner bonus (very high)
-		if pos in corners:
-			score += 100.0
-
-		# 3. Penalty for adjacent to corner (gives opponent corner opportunity)
-		if pos in corner_adjacent:
-			score -= 30.0
-
-		# 4. Edge position bonus (edges are more stable)
-		if pos.y == 0 or pos.y == 7 or pos.x == 0 or pos.x == 7:
-			if not (pos in corners):
-				score += 5.0
-
-		# 5. Mobility: simulate the move and count opponent's available moves
-		# (fewer opponent moves is better)
-		var sim_state = GameState.new(current_state.board, current_state.board_size)
-		sim_state.apply_move(move, player)
-
-		var opp_moves = sim_state.get_valid_moves(opp)
-		score -= opp_moves.size() * 3.0
-
-		if score > best_score:
-			best_score = score
-			best_move = move
+	if player == GameConstants.WHITE:
+		var best_val = -1000000.0
+		for m in moves:
+			var undo_data = sim_state.apply_move(m, player)
+			var val = _minimax(sim_state, depth - 1, -1000000.0, 1000000.0, false)
+			sim_state.undo_move(undo_data)
+			if val > best_val:
+				best_val = val
+				best_move = m
+	else:
+		var best_val = 1000000.0
+		for m in moves:
+			var undo_data = sim_state.apply_move(m, player)
+			var val = _minimax(sim_state, depth - 1, -1000000.0, 1000000.0, true)
+			sim_state.undo_move(undo_data)
+			if val < best_val:
+				best_val = val
+				best_move = m
 
 	return best_move
+
+func _sort_moves(moves: Array) -> void:
+	# Simple move ordering: Corners > Edges > Others
+	moves.sort_custom(func(a, b):
+		var score_a = _get_move_priority(a.pos)
+		var score_b = _get_move_priority(b.pos)
+		return score_a > score_b
+	)
+
+func _get_move_priority(pos: Vector2i) -> int:
+	if (pos.x == 0 or pos.x == 7) and (pos.y == 0 or pos.y == 7):
+		return 3 # Corner
+	if pos.x == 0 or pos.x == 7 or pos.y == 0 or pos.y == 7:
+		return 2 # Edge
+	return 1 # Middle
 
 func _minimax(state, depth: int, alpha: float, beta: float, is_maximizing: bool) -> float:
 	if depth == 0:
@@ -80,12 +76,15 @@ func _minimax(state, depth: int, alpha: float, beta: float, is_maximizing: bool)
 			# Pass turn: continue minimax with the other player
 			return _minimax(state, depth - 1, alpha, beta, !is_maximizing)
 
+	# Sort moves for pruning efficiency
+	_sort_moves(moves)
+
 	if is_maximizing:
 		var max_eval = -1000000.0
 		for m in moves:
-			var sim_state = GameState.new(state.board, state.board_size)
-			sim_state.apply_move(m, player)
-			var eval = _minimax(sim_state, depth - 1, alpha, beta, false)
+			var undo_data = state.apply_move(m, player)
+			var eval = _minimax(state, depth - 1, alpha, beta, false)
+			state.undo_move(undo_data)
 			max_eval = max(max_eval, eval)
 			alpha = max(alpha, eval)
 			if beta <= alpha:
@@ -94,9 +93,9 @@ func _minimax(state, depth: int, alpha: float, beta: float, is_maximizing: bool)
 	else:
 		var min_eval = 1000000.0
 		for m in moves:
-			var sim_state = GameState.new(state.board, state.board_size)
-			sim_state.apply_move(m, player)
-			var eval = _minimax(sim_state, depth - 1, alpha, beta, true)
+			var undo_data = state.apply_move(m, player)
+			var eval = _minimax(state, depth - 1, alpha, beta, true)
+			state.undo_move(undo_data)
 			min_eval = min(min_eval, eval)
 			beta = min(beta, eval)
 			if beta <= alpha:

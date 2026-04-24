@@ -2,6 +2,10 @@
 
 This document tracks the long-term goals for refactoring and improving the Godot Othello project.
 
+## 🔄 Game Loop & Stability
+- [ ] **Stabilize the Game Loop**: Fix turn-switching and AI automation issues in `GameManager`.
+- [ ] **Verify and Tune AI**: Test Minimax depth and refine the heuristic evaluation function.
+
 ## 🏗️ Architectural Refactoring (Decoupling)
 Currently, `main.gd` acts as a "God Object"—it handles game logic, AI, UI creation, input, and even low-level drawing.
 - [ ] **Split responsibilities into specialized nodes**:
@@ -16,6 +20,7 @@ Currently, `main.gd` acts as a "God Object"—it handles game logic, AI, UI crea
 
 ## 🧠 Intelligence & Gameplay
 - [ ] **Strengthen the AI**: Implement a **Minimax algorithm with Alpha-Beta pruning** to allow the AI to look ahead multiple moves.
+- [ ] **Refine AI Heuristics**: Tune the evaluation function (weighting corners, edges, and mobility).
 
 ## ⚙️ Engine & Rendering Optimization
 - [ ] **Configuration via Resources**: Move hardcoded constants (like `BOARD_OFFSET`, `CELL_SIZE`, and colors) into a custom `Resource` class (e.g., `GameConfig.gd`) to allow easy tweaking via `.tres` files.

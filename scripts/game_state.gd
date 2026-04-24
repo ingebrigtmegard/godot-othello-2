@@ -50,12 +50,22 @@ func _flip_direction(x: int, y: int, dx: int, dy: int, player: int) -> Array:
 		return flips
 	return []
 
-func apply_move(move: Dictionary, player: int) -> void:
+func apply_move(move: Dictionary, player: int) -> Dictionary:
 	var pos: Vector2i = move.pos
 	var flips: Array = move.flips
 	set_cell(pos.x, pos.y, player)
 	for f in flips:
 		set_cell(f.x, f.y, player)
+	return {"pos": pos, "flips": flips, "player": player}
+
+func undo_move(undo_data: Dictionary) -> void:
+	var pos: Vector2i = undo_data.pos
+	var flips: Array = undo_data.flips
+	var player: int = undo_data.player
+	var opponent: int = GameConstants.WHITE if player == GameConstants.BLACK else GameConstants.BLACK
+	set_cell(pos.x, pos.y, opponent)
+	for f in flips:
+		set_cell(f.x, f.y, opponent)
 
 func get_score() -> Dictionary:
 	var black = 0

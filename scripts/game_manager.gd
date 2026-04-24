@@ -44,9 +44,10 @@ func _ready():
 	ui_manager.pass_requested.connect(_on_pass_requested)
 
 	# Setup initial state
-	init_game()
+	await init_game()
 
 func init_game():
+	print("init_game starting")
 	board.reset_board()
 	current_player = BLACK
 	animating = false
@@ -70,21 +71,26 @@ func init_game():
 	if valid_moves.size() == 0:
 		await switch_turn()
 
+	print("init_game finished")
 	game_started.emit()
 
 func _on_move_attempted(x: int, y: int):
+	print("move_attempted received: ", x, ",", y)
 	if animating or not message_ready:
+		print("move ignored: animating=", animating, " message_ready=", message_ready)
 		return
 
 	# Check if the move is valid
 	for move in valid_moves:
 		if move.pos.x == x and move.pos.y == y:
-			perform_move(x, y, move.flips)
+			print("valid move found! performing move...")
+			await perform_move(x, y, move.flips)
 			return
-	# Optionally show an error message or sound
-	pass
+	print("invalid move attempted at: ", x, ",", y)
 
 func perform_move(x: int, y: int, flips: Array):
+	print("DEBUG: perform_move called at line 91")
+	print("perform_move start: player=", current_player)
 	animating = true
 	ui_manager.set_pass_button_visible(false)
 
@@ -93,8 +99,9 @@ func perform_move(x: int, y: int, flips: Array):
 	# We'll simulate the animation delay here
 	await get_tree().create_timer(0.5).timeout
 
-	animating = false
 	await switch_turn()
+	animating = false
+	print("perform_move finished after switch_turn")
 
 func _on_piece_placed(_pos: Vector2i, _player: int, _flips: Array):
 	print("Piece placed! Player: ", _player)
@@ -106,28 +113,40 @@ func _on_valid_moves_changed(moves: Array):
 	board.update_valid_moves_for_drawing(moves)
 
 func _on_restart_requested():
-	init_game()
+	print("restart requested")
+	await init_game()
 
 func _on_pass_requested():
+	print("pass requested")
 	if not animating and message_ready:
 		await switch_turn()
 
 func switch_turn():
+	print("DEBUG: switch_turn called at line 124")
+	animating = true
+	print("switch_turn start. current_player: ", current_player)
 	var next_player = WHITE if current_player == BLACK else BLACK
+	print("next_player: ", next_player)
 	var next_moves = board.get_valid_moves_for_player(next_player)
+	print("next_moves size: ", next_moves.size())
 
 	if next_moves.size() == 0:
 		# Check if current player also has no moves
 		var current_moves = board.get_valid_moves_for_player(current_player)
+		print("current_moves size (for pass check): ", current_moves.size())
 		if current_moves.size() == 0:
 			var score = board.get_score()
 			var result = get_game_over_message(score.black, score.white)
+			print("Game Over: ", result)
 			ui_manager.show_message(result)
 			ui_manager.set_restart_button_visible(true)
 			game_over.emit(result)
+			print("switch_turn (game over) finished")
+			animating = false
 			return
 
 		# Pass
+		print("Pass detected!")
 		ui_manager.show_message("Pass!")
 		message_ready = false
 		await get_tree().create_timer(1.5).timeout
@@ -137,9 +156,15 @@ func switch_turn():
 		board.valid_moves_changed.emit(next_moves)
 		ui_manager.update_turn("White" if current_player == WHITE else "Black")
 		ui_manager.set_pass_button_visible(valid_moves.size() == 0)
+		print("Pass switch_turn finished. current_player: ", current_player)
 
 		if white_ai_enabled and current_player == WHITE:
-			call_ai_turn()
+			print("Calling AI turn after pass")
+			await call_ai_turn()
+		else:
+			print("No AI turn needed after pass")
+		print("switch_turn (pass) finished")
+		animating = false
 		return
 
 	current_player = next_player
@@ -147,18 +172,26 @@ func switch_turn():
 	board.valid_moves_changed.emit(next_moves)
 	ui_manager.update_turn("White" if current_player == WHITE else "Black")
 	ui_manager.set_pass_button_visible(valid_moves.size() == 0)
+	print("switch_turn (normal) finished. current_player: ", current_player)
 
 	if white_ai_enabled and current_player == WHITE:
-		call_ai_turn()
+		print("Calling AI turn")
+		await call_ai_turn()
+
+	animating = false
 
 func call_ai_turn():
+	print("call_ai_turn start")
 	await get_tree().create_timer(0.5).timeout
 	var move = ai_controller.choose_ai_move(WHITE, board)
+	print("AI move chosen: ", move)
 	if move.is_empty():
+		print("AI move is empty, calling switch_turn")
 		await switch_turn()
 	else:
-		# For AI, we use perform_move logic but directly
-		perform_move(move.pos.x, move.pos.y, move.flips)
+		print("AI move found, performing move...")
+		await perform_move(move.pos.x, move.pos.y, move.flips)
+	print("call_ai_turn finished")
 
 func get_game_over_message(black: int, white: int) -> String:
 	if black > white:
