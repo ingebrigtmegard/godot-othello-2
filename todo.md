@@ -23,5 +23,5 @@
 
 - [ ] Settings menu (board colors, theme)
 - [ ] Export builds (Windows, Linux, Web)
-- [ ] Sprite-based pieces (replace drawn circles with texture assets for polish)
+- [ ] **Sprite-based pieces** — Replace drawn circles with textured disc PNGs (radial gradients, highlights, drop shadows). Animate flip via TextureRect scale (shrink to edge-on, swap texture at midpoint, grow back).
 - [ ] Game history / replay system
