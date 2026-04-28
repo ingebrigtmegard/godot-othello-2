@@ -60,6 +60,7 @@ func init_game():
 
 	ui_manager.update_scores(board.get_score().black, board.get_score().white)
 	ui_manager.update_turn("Black")
+	ui_manager.hide_message()
 	ui_manager.set_restart_button_visible(false)
 	ui_manager.set_pass_button_visible(valid_moves.size() == 0)
 
