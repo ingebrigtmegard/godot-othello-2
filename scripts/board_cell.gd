@@ -40,6 +40,7 @@ func set_piece(player: int, color: Color):
 		piece_visual.texture = target_tex
 		piece_visual.visible = true
 		piece_visual.scale = Vector2(1, 1)
+		flip_finished.emit()
 		return
 
 	# Hide piece if removing

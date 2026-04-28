@@ -98,28 +98,31 @@ func place_piece(x: int, y: int, player: int, flips: Array):
 	_state.apply_move(move, player)
 	_last_placed_pos = Vector2i(x, y)
 
-	var animating_cells: Array = []
 	var color = white_color if player == GameConstants.WHITE else black_color
 
-	# Animate the placed piece
-	cells[y * board_size + x].set_piece(player, color)
-	animating_cells.append(cells[y * board_size + x])
-
-	# Animate flipped pieces
+	# Build list of cells to animate
+	var cells_to_animate: Array = []
+	cells_to_animate.append(cells[y * board_size + x])
 	for f in flips:
-		cells[f.y * board_size + f.x].set_piece(player, color)
-		animating_cells.append(cells[f.y * board_size + f.x])
+		cells_to_animate.append(cells[f.y * board_size + f.x])
 
-	if animating_cells.size() == 0:
+	if cells_to_animate.size() == 0:
 		_finish_placement(x, y, player, flips, color)
 		return
 
-	_pending_animations = animating_cells
+	_pending_animations = cells_to_animate
 	_animations_done_count = 0
 	_placement_deferred_data = {"x": x, "y": y, "player": player, "flips": flips, "color": color}
 
-	for cell in animating_cells:
-		cell.flip_finished.connect(_on_cell_flip_finished)
+	# Connect signals before triggering animations so no emissions are lost
+	for cell in cells_to_animate:
+		if not cell.flip_finished.is_connected(_on_cell_flip_finished):
+			cell.flip_finished.connect(_on_cell_flip_finished)
+
+	# Now trigger animations
+	cells[y * board_size + x].set_piece(player, color)
+	for f in flips:
+		cells[f.y * board_size + f.x].set_piece(player, color)
 
 	await animations_complete
 

@@ -18,10 +18,11 @@
 - **Restart**: Full game reset, clears game-over message, restores settings panel
 - **GameConfig resource**: Configurable board offset, cell size, colors, and AI depth via `.tres`
 - **Game constants**: Centralized EMPTY/BLACK/WHITE constants in autoloaded GameConstants
+- **Sprite-based pieces** — Replace drawn circles with textured disc PNGs (radial gradients, highlights, drop shadows). Animate flip via TextureRect scale (shrink to edge-on, swap texture at midpoint, grow back).
+- **Turn visibility** — Ensure UI renders before AI plays so turn changes are visible to the player.
 
 ## Remaining
 
 - [ ] Settings menu (board colors, theme)
 - [ ] Export builds (Windows, Linux, Web)
-- [ ] **Sprite-based pieces** — Replace drawn circles with textured disc PNGs (radial gradients, highlights, drop shadows). Animate flip via TextureRect scale (shrink to edge-on, swap texture at midpoint, grow back).
 - [ ] Game history / replay system

@@ -81,7 +81,6 @@ func init_game():
 func _on_move_attempted(x: int, y: int):
 	if animating or not message_ready:
 		return
-
 	for move in valid_moves:
 		if move.pos.x == x and move.pos.y == y:
 			await perform_move(x, y, move.flips)
@@ -156,9 +155,11 @@ func switch_turn():
 	ui_manager.set_pass_button_visible(valid_moves.size() == 0)
 
 	if white_ai_enabled and current_player == WHITE:
+		await get_tree().process_frame  # Let UI render before AI plays
 		await call_ai_turn()
 
 	animating = false
+	print("  switch_turn done, animating=", animating)
 
 func call_ai_turn():
 	await get_tree().create_timer(0.5).timeout
