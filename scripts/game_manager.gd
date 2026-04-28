@@ -72,7 +72,6 @@ func init_game():
 	ui_manager.hide_message()
 	ui_manager.set_restart_button_visible(false)
 	ui_manager.set_pass_button_visible(valid_moves.size() == 0)
-	ui_manager.hide_settings()
 
 	if valid_moves.size() == 0:
 		await switch_turn()
@@ -91,6 +90,7 @@ func _on_move_attempted(x: int, y: int):
 func perform_move(x: int, y: int, flips: Array):
 	animating = true
 	ui_manager.set_pass_button_visible(false)
+	ui_manager.hide_settings()
 
 	_play_click()
 	# place_piece is now async — animations complete before returning
