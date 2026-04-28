@@ -20,9 +20,9 @@
 - **Game constants**: Centralized EMPTY/BLACK/WHITE constants in autoloaded GameConstants
 - **Sprite-based pieces** — Replace drawn circles with textured disc PNGs (radial gradients, highlights, drop shadows). Animate flip via TextureRect scale (shrink to edge-on, swap texture at midpoint, grow back).
 - **Turn visibility** — Ensure UI renders before AI plays so turn changes are visible to the player.
+- **Settings menu** — Preset board themes (Classic Green, Dark Mode, Ocean Blue, Wood) selectable via dropdown in SettingsHBox. Persists across restarts via ConfigFile.
 
 ## Remaining
 
-- [ ] Settings menu (board colors, theme)
 - [ ] Export builds (Windows, Linux, Web)
 - [ ] Game history / replay system

@@ -15,6 +15,8 @@ var _state: RefCounted
 var cells: Array = []
 var black_color = Color(0.1, 0.1, 0.1)
 var white_color = Color(0.95, 0.95, 0.95)
+var board_bg_color = Color(0.1, 0.35, 0.15)
+var grid_color = Color(0.05, 0.2, 0.05)
 var board_offset := Vector2(160, 60)
 var cell_size := 60
 var board_size := 8
@@ -34,6 +36,8 @@ func _ready():
 		board_size = config.board_size
 		black_color = config.black_color
 		white_color = config.white_color
+		board_bg_color = config.board_bg_color
+		grid_color = config.grid_color
 
 	_setup_cells()
 	reset_board()
@@ -173,13 +177,16 @@ func update_valid_moves_for_drawing(moves: Array):
 func get_score() -> Dictionary:
 	return _state.get_score()
 
+func apply_theme(bg_color: Color, gr_color: Color):
+	board_bg_color = bg_color
+	grid_color = gr_color
+	queue_redraw()
+
 func _draw():
 	# Background
-	var bg_color = Color(0.1, 0.35, 0.15)
-	draw_rect(Rect2(Vector2.ZERO, get_size()), bg_color)
+	draw_rect(Rect2(Vector2.ZERO, get_size()), board_bg_color)
 
 	# Grid lines
-	var grid_color = Color(0.05, 0.2, 0.05)
 	for i in board_size + 1:
 		var start = board_offset + Vector2(i * cell_size, 0)
 		var end = board_offset + Vector2(i * cell_size, board_size * cell_size)

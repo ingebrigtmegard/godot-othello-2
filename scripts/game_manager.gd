@@ -49,6 +49,7 @@ func _ready():
 	ui_manager.pass_requested.connect(_on_pass_requested)
 	ui_manager.ai_toggle_changed.connect(_on_ai_toggle_changed)
 	ui_manager.difficulty_changed.connect(_on_difficulty_changed)
+	ui_manager.theme_applied.connect(_on_theme_applied)
 
 	await init_game()
 
@@ -183,6 +184,12 @@ func _on_ai_toggle_changed(enabled: bool):
 func _on_difficulty_changed(depth: int):
 	if config:
 		config.ai_depth = depth
+
+func _on_theme_applied(bg_color: Color, grid_color: Color):
+	if config:
+		config.board_bg_color = bg_color
+		config.grid_color = grid_color
+	board.apply_theme(bg_color, grid_color)
 
 func _play_click():
 	if sound_player and not sound_player.playing:

@@ -9,25 +9,40 @@ extends Control
 @onready var settings_hbox: HBoxContainer = $MarginContainer/VBoxContainer/SettingsHBox
 @onready var ai_toggle_checkbox: CheckBox = $MarginContainer/VBoxContainer/SettingsHBox/AiToggleCheckBox
 @onready var difficulty_selector: OptionButton = $MarginContainer/VBoxContainer/SettingsHBox/DifficultySelector
+@onready var theme_label: Label = $MarginContainer/VBoxContainer/SettingsHBox/ThemeLabel
+@onready var theme_selector: OptionButton = $MarginContainer/VBoxContainer/SettingsHBox/ThemeSelector
 
 # --- Signals ---
 signal restart_requested
 signal pass_requested
 signal ai_toggle_changed(enabled: bool)
 signal difficulty_changed(depth: int)
+signal theme_applied(bg_color: Color, grid_color: Color)
+
+# --- Theme Definitions ---
+var _THEMES = [
+	{"name": "Classic Green", "bg": Color(0.1, 0.35, 0.15), "grid": Color(0.05, 0.2, 0.05)},
+	{"name": "Dark Mode", "bg": Color(0.15, 0.15, 0.2), "grid": Color(0.08, 0.08, 0.12)},
+	{"name": "Ocean Blue", "bg": Color(0.05, 0.2, 0.35), "grid": Color(0.03, 0.12, 0.2)},
+	{"name": "Wood", "bg": Color(0.35, 0.22, 0.08), "grid": Color(0.22, 0.14, 0.05)}
+]
 
 func _ready():
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Force container layout for children (deferred to apply after scene load)
 	call_deferred("_set_layout_modes")
 	populate_difficulty_selector()
+	_populate_theme_selector()
 	restart_button.pressed.connect(_on_restart_pressed)
 	pass_button.pressed.connect(_on_pass_pressed)
 	ai_toggle_checkbox.toggled.connect(_on_ai_toggle_changed)
 	difficulty_selector.item_selected.connect(_on_difficulty_selected)
+	theme_selector.item_selected.connect(_on_theme_selected)
 	restart_button.visible = false
 	pass_button.visible = false
 	message_label.visible = false
+	# Defer initial theme application so game_manager can connect to theme_applied first
+	call_deferred("_apply_initial_theme")
 
 func _set_layout_modes():
 	for child in $MarginContainer/VBoxContainer.get_children():
@@ -79,3 +94,36 @@ func _on_restart_pressed():
 
 func _on_pass_pressed():
 	pass_requested.emit()
+
+func _populate_theme_selector():
+	if theme_selector.item_count == 0:
+		for t in _THEMES:
+			theme_selector.add_item(t.name)
+		theme_selector.select(0)
+
+func _load_saved_theme() -> int:
+	var cfg = ConfigFile.new()
+	if cfg.load("user://settings.cfg") == OK:
+		return cfg.get_value("settings", "theme_index", 0)
+	return 0
+
+func _save_theme(index: int):
+	var cfg = ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	cfg.set_value("settings", "theme_index", index)
+	cfg.save("user://settings.cfg")
+
+func _apply_theme(index: int):
+	if index < 0 or index >= _THEMES.size():
+		return
+	var t = _THEMES[index]
+	theme_applied.emit(t.bg, t.grid)
+	theme_selector.select(index)
+	_save_theme(index)
+
+func _apply_initial_theme():
+	var index = _load_saved_theme()
+	_apply_theme(index)
+
+func _on_theme_selected(index: int):
+	_apply_theme(index)
