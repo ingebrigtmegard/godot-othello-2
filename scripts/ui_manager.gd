@@ -13,6 +13,14 @@ signal pass_requested
 
 func _ready():
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Force container layout for children (deferred to apply after scene load)
+	call_deferred("_set_layout_modes")
+
+func _set_layout_modes():
+	for child in $MarginContainer/VBoxContainer.get_children():
+		child.layout_mode = 3
+		for grandchild in child.get_children():
+			grandchild.layout_mode = 3
 	restart_button.pressed.connect(_on_restart_pressed)
 	pass_button.pressed.connect(_on_pass_pressed)
 	restart_button.visible = false

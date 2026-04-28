@@ -44,7 +44,9 @@ func _setup_cells():
 			cell.name = "Cell_%d_%d" % [x, y]
 			cell.x = x
 			cell.y = y
+			cell.layout_mode = 0
 			cell.position = board_offset + Vector2(x * cell_size, y * cell_size)
+			cell.custom_minimum_size = Vector2(cell_size, cell_size)
 			cell.size = Vector2(cell_size, cell_size)
 			cell.mouse_filter = Control.MOUSE_FILTER_STOP
 			cell.cell_pressed.connect(_on_cell_pressed)
@@ -113,13 +115,17 @@ func place_piece(x: int, y: int, player: int, flips: Array):
 	queue_redraw()
 
 func update_valid_moves_for_drawing(moves: Array):
-	# This is now handled inside place_piece and reset_board
-	# but kept for interface compatibility if needed by external callers
 	for cell in cells:
 		cell.set_valid_move(false)
 	for m in moves:
 		cells[m.pos.y * board_size + m.pos.x].set_valid_move(true)
-	valid_moves_changed.emit(moves)
+	# Sync piece visuals from state
+	for y in board_size:
+		for x in board_size:
+			var cell_value = get_cell(x, y)
+			if cell_value != GameConstants.EMPTY:
+				var color = white_color if cell_value == GameConstants.WHITE else black_color
+				cells[y * board_size + x].set_piece(cell_value, color)
 	queue_redraw()
 
 func get_score() -> Dictionary:
