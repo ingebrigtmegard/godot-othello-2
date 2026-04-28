@@ -17,10 +17,15 @@
 
 ## Remaining
 
-- [ ] Sound effects (piece placement, flips, game-over)
-- [ ] Piece flip animation (smooth transition when pieces change color)
-- [ ] Difficulty selector / AI depth UI control
-- [ ] Two-player local mode toggle (disable AI for White)
+### High Priority (next to implement)
+
+- [ ] **Two-player local mode** — Add a toggle (button or setting) to disable AI for White, letting a second player control White via cell clicks
+- [ ] **Difficulty selector** — Add a dropdown (Easy/Medium/Hard) in the UI that maps to AI depth values (2/4/6). Persist choice across restarts.
+- [ ] **Piece flip animation** — Smooth color interpolation (~200ms) when pieces change color during a flip, instead of instant snap
+- [ ] **Sound effects** — Add audio feedback for piece placement, piece flips, and game-over announcement. Wire up via `AudioStreamPlayer` nodes on bus.
+
+### Lower Priority
+
 - [ ] Game history / replay system
 - [ ] Settings menu (board colors, theme)
 - [ ] Export builds (Windows, Linux, Web)

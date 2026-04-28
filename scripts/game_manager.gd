@@ -12,6 +12,12 @@ const WHITE := GameConstants.WHITE
 @onready var board: Node = $Board
 @onready var ai_controller: Node = $AIController
 @onready var ui_manager: Control = $UIManager
+@onready var sound_player: AudioStreamPlayer = $SoundPlayer
+
+# --- Sounds ---
+const CLICK_SOUND = preload("res://sounds/click.wav")
+const FLIP_SOUND = preload("res://sounds/flip.wav")
+const GAMEOVER_SOUND = preload("res://sounds/gameover.wav")
 
 # --- Configuration ---
 @export var config: GameConfig
@@ -22,6 +28,7 @@ var valid_moves: Array = []
 var animating: bool = false
 var message_ready: bool = true
 var white_ai_enabled: bool = true
+var _ai_enabled: bool = true
 
 func _ready():
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -40,6 +47,8 @@ func _ready():
 
 	ui_manager.restart_requested.connect(_on_restart_requested)
 	ui_manager.pass_requested.connect(_on_pass_requested)
+	ui_manager.ai_toggle_changed.connect(_on_ai_toggle_changed)
+	ui_manager.difficulty_changed.connect(_on_difficulty_changed)
 
 	await init_game()
 
@@ -48,7 +57,7 @@ func init_game():
 	current_player = BLACK
 	animating = false
 	message_ready = true
-	white_ai_enabled = true
+	white_ai_enabled = _ai_enabled
 
 	board.set_cell(3, 3, WHITE)
 	board.set_cell(4, 4, WHITE)
@@ -63,6 +72,7 @@ func init_game():
 	ui_manager.hide_message()
 	ui_manager.set_restart_button_visible(false)
 	ui_manager.set_pass_button_visible(valid_moves.size() == 0)
+	ui_manager.hide_settings()
 
 	if valid_moves.size() == 0:
 		await switch_turn()
@@ -82,9 +92,11 @@ func perform_move(x: int, y: int, flips: Array):
 	animating = true
 	ui_manager.set_pass_button_visible(false)
 
-	board.place_piece(x, y, current_player, flips)
-
-	await get_tree().create_timer(0.5).timeout
+	_play_click()
+	# place_piece is now async — animations complete before returning
+	await board.place_piece(x, y, current_player, flips)
+	if flips.size() > 0:
+		_play_flip()
 
 	await switch_turn()
 	animating = false
@@ -116,7 +128,9 @@ func switch_turn():
 			var result = get_game_over_message(score.black, score.white)
 			ui_manager.show_message(result)
 			ui_manager.set_restart_button_visible(true)
+			ui_manager.show_settings()
 			game_over.emit(result)
+			_play_gameover()
 			animating = false
 			return
 
@@ -161,6 +175,28 @@ func get_game_over_message(black: int, white: int) -> String:
 		return "White Wins! %d-%d" % [black, white]
 	else:
 		return "Draw! %d-%d" % [black, white]
+
+func _on_ai_toggle_changed(enabled: bool):
+	_ai_enabled = enabled
+
+func _on_difficulty_changed(depth: int):
+	if config:
+		config.ai_depth = depth
+
+func _play_click():
+	if sound_player and not sound_player.playing:
+		sound_player.stream = CLICK_SOUND
+		sound_player.play()
+
+func _play_flip():
+	if sound_player and not sound_player.playing:
+		sound_player.stream = FLIP_SOUND
+		sound_player.play()
+
+func _play_gameover():
+	if sound_player and not sound_player.playing:
+		sound_player.stream = GAMEOVER_SOUND
+		sound_player.play()
 
 func _input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

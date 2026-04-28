@@ -10,6 +10,8 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_oo155")
 
 [node name="Board" type="Control" parent="." unique_id=1300705040]
@@ -82,3 +84,23 @@ text = "Restart"
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Pass"
+
+[node name="SettingsHBox" type="HBoxContainer" parent="UIManager/MarginContainer/VBoxContainer" unique_id=92780122]
+layout_mode = 2
+
+[node name="AiToggleCheckBox" type="CheckBox" parent="UIManager/MarginContainer/VBoxContainer/SettingsHBox" unique_id=279097644]
+layout_mode = 2
+size_flags_horizontal = 3
+button_pressed = true
+text = "AI Opponent"
+
+[node name="DifficultyLabel" type="Label" parent="UIManager/MarginContainer/VBoxContainer/SettingsHBox" unique_id=480117367]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Difficulty:"
+
+[node name="DifficultySelector" type="OptionButton" parent="UIManager/MarginContainer/VBoxContainer/SettingsHBox" unique_id=1231736448]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SoundPlayer" type="AudioStreamPlayer" parent="." unique_id=398628684]

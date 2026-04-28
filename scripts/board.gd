@@ -4,6 +4,7 @@ extends Control
 signal piece_placed(pos: Vector2i, player: int, flips: Array)
 signal valid_moves_changed(moves: Array)
 signal move_attempted(x: int, y: int)
+signal animations_complete
 
 # --- Configuration ---
 @export var config: GameConfig
@@ -20,6 +21,11 @@ var board_size := 8
 
 # For last placed piece indicator
 var _last_placed_pos: Vector2i = Vector2i(-1, -1)
+
+# For tracking animation completion
+var _pending_animations: Array = []
+var _animations_done_count: int = 0
+var _placement_deferred_data: Dictionary = {}
 
 func _ready():
 	if config:
@@ -87,19 +93,52 @@ func get_valid_moves_for_player(player: int) -> Array:
 	return _state.get_valid_moves(player)
 
 func place_piece(x: int, y: int, player: int, flips: Array):
+	# Update game state synchronously (critical for AI simulation)
 	var move = {"pos": Vector2i(x, y), "flips": flips}
 	_state.apply_move(move, player)
-
 	_last_placed_pos = Vector2i(x, y)
 
-	# Update cell for placed piece
+	var animating_cells: Array = []
 	var color = white_color if player == GameConstants.WHITE else black_color
-	cells[y * board_size + x].set_piece(player, color)
 
-	# Update cells for flipped pieces
+	# Animate the placed piece
+	cells[y * board_size + x].set_piece(player, color)
+	animating_cells.append(cells[y * board_size + x])
+
+	# Animate flipped pieces
 	for f in flips:
 		cells[f.y * board_size + f.x].set_piece(player, color)
+		animating_cells.append(cells[f.y * board_size + f.x])
 
+	if animating_cells.size() == 0:
+		_finish_placement(x, y, player, flips, color)
+		return
+
+	_pending_animations = animating_cells
+	_animations_done_count = 0
+	_placement_deferred_data = {"x": x, "y": y, "player": player, "flips": flips, "color": color}
+
+	for cell in animating_cells:
+		cell.flip_finished.connect(_on_cell_flip_finished)
+
+	await animations_complete
+
+func _on_cell_flip_finished():
+	_animations_done_count += 1
+	if _animations_done_count >= _pending_animations.size():
+		# All animations done, clean up connections
+		for cell in _pending_animations:
+			if cell.flip_finished.is_connected(_on_cell_flip_finished):
+				cell.flip_finished.disconnect(_on_cell_flip_finished)
+
+		var data = _placement_deferred_data
+		_finish_placement(data.x, data.y, data.player, data.flips, data.color)
+
+		_pending_animations.clear()
+		_animations_done_count = 0
+		animations_complete.emit()
+
+func _finish_placement(x: int, y: int, player: int, flips: Array, color: Color):
 	# Update valid moves for the NEXT player
 	var next_player = GameConstants.WHITE if player == GameConstants.BLACK else GameConstants.BLACK
 	var next_moves = get_valid_moves_for_player(next_player)
