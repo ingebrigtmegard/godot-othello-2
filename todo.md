@@ -21,8 +21,8 @@
 - **Sprite-based pieces** — Replace drawn circles with textured disc PNGs (radial gradients, highlights, drop shadows). Animate flip via TextureRect scale (shrink to edge-on, swap texture at midpoint, grow back).
 - **Turn visibility** — Ensure UI renders before AI plays so turn changes are visible to the player.
 - **Settings menu** — Preset board themes (Classic Green, Dark Mode, Ocean Blue, Wood) selectable via dropdown in SettingsHBox. Persists across restarts via ConfigFile.
+- **Game history / replay system** — Records all moves during gameplay. After game-over, "Replay" button appears. Click to enter replay mode showing initial 4-piece position with Prev/Next/Exit controls and step counter (e.g. "3/12"). Rebuilds board from initial state forward using `apply_move()`. Cell clicks disabled during replay. Exit returns to game-over screen.
 
 ## Remaining
 
 - [ ] Export builds (Windows, Linux, Web)
-- [ ] Game history / replay system

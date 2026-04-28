@@ -10,6 +10,7 @@ var x: int = 0
 var y: int = 0
 var _is_valid_move: bool = false
 var _piece_player: int = 0
+var replay_mode: bool = false
 
 @onready var piece_visual: TextureRect = $PieceVisual
 
@@ -19,6 +20,8 @@ func _ready():
 	_piece_player = 0
 
 func _on_pressed():
+	if replay_mode:
+		return
 	cell_pressed.emit(x, y)
 
 func set_piece(player: int, color: Color):
@@ -64,6 +67,21 @@ func set_piece(player: int, color: Color):
 		piece_visual.texture = target_tex
 		piece_visual.visible = true
 		flip_finished.emit()
+
+func set_piece_instantly(player: int):
+	_piece_player = player
+
+	if player == GameConstants.EMPTY:
+		piece_visual.visible = false
+		return
+
+	piece_visual.texture = WHITE_PIECE if player == GameConstants.WHITE else BLACK_PIECE
+	piece_visual.visible = true
+	piece_visual.scale = Vector2(1, 1)
+
+func set_replay_mode(enabled: bool):
+	replay_mode = enabled
+	mouse_filter = MOUSE_FILTER_IGNORE if enabled else MOUSE_FILTER_STOP
 
 func set_valid_move(is_valid: bool):
 	_is_valid_move = is_valid

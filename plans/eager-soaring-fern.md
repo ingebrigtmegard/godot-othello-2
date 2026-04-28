@@ -1,82 +1,106 @@
-# Implementation Plan: Settings Menu — Preset Board Themes
+# Implementation Plan: Game History / Replay System
 
 ## Context
 
-The game currently has hardcoded board colors (green background, dark green grid). Players want the ability to customize the board's visual appearance. This plan adds a **preset theme selector** to the existing `SettingsHBox`, offering four named themes that change the board background and grid line colors. Piece rendering stays unchanged (PNG textures already have proper colors).
-
-## Theme Definitions
-
-| Theme | Board Background | Grid Lines |
-|-------|------------------|------------|
-| Classic Green (default) | `Color(0.1, 0.35, 0.15)` | `Color(0.05, 0.2, 0.05)` |
-| Dark Mode | `Color(0.15, 0.15, 0.2)` | `Color(0.08, 0.08, 0.12)` |
-| Ocean Blue | `Color(0.05, 0.2, 0.35)` | `Color(0.03, 0.12, 0.2)` |
-| Wood | `Color(0.35, 0.22, 0.08)` | `Color(0.22, 0.14, 0.05)` |
+The game has no way to review completed games. Players want to replay finished games step by step to see how the position evolved. This plan adds move recording during normal play and a replay mode accessible after game-over with Prev/Next navigation.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `scripts/game_config.gd` | Add `board_bg_color` and `grid_color` exports |
-| `scripts/board.gd` | Replace hardcoded colors with instance vars; add `apply_theme()` method |
-| `scripts/board_cell.gd` | No changes (piece textures are PNGs with baked-in colors) |
-| `scripts/ui_manager.gd` | Add `_THEMES` constant, `theme_changed` signal, UI refs, persistence via ConfigFile |
-| `scripts/game_manager.gd` | Connect `theme_changed`; wire to `board.apply_theme()` |
-| `scenes/game_manager.tscn` | Add `ThemeLabel` + `ThemeSelector` under `SettingsHBox` |
+| `scripts/game_state.gd` | Fix `undo_move()` bug (line 67) |
+| `scripts/board_cell.gd` | Add `set_piece_instantly()` and `set_replay_mode()` |
+| `scripts/board.gd` | Add `render_state_instantly()` and `set_replay_mode()` |
+| `scripts/ui_manager.gd` | Add replay signals, UI refs, step label method |
+| `scripts/game_manager.gd` | Record moves, replay state machine, wire UI |
+| `scenes/game_manager.tscn` | Add ReplayButton + ReplayHBox (Prev, StepLabel, Next, Exit) |
+
+## Move Data Model
+
+Each entry in `move_history` is one of:
+- **Move:** `{"pos": Vector2i, "flips": Array[Vector2i], "player": int}`
+- **Pass:** `{"pass": true, "player": int}`
+
+Replay rebuilds from the initial 4-piece state by applying moves 0..N forward via `apply_move()`.
 
 ## Implementation Steps
 
-### 1. `scripts/game_config.gd` — Add board color exports
+### 1. `scripts/game_state.gd` — Fix undo_move bug
 
-Add two properties after `white_color`:
-```gdscript
-@export var board_bg_color: Color = Color(0.1, 0.35, 0.15)
-@export var grid_color: Color = Color(0.05, 0.2, 0.05)
-```
+Line 67: change `set_cell(pos.x, pos.y, opponent)` → `set_cell(pos.x, pos.y, GameConstants.EMPTY)`. The placed cell was EMPTY before the move, not opponent-colored.
 
-### 2. `scripts/board.gd` — Make colors configurable
+### 2. `scripts/board_cell.gd` — Instant rendering + replay mode
 
-- Add instance vars: `var board_bg_color`, `var grid_color` (default to Classic Green)
-- In `_ready()`: read from `config` if present
-- In `_draw()`: replace hardcoded `Color(0.1, 0.35, 0.15)` → `board_bg_color`, hardcoded `Color(0.05, 0.2, 0.05)` → `grid_color`
-- Add `func apply_theme(bg_color, gr_color)`: update both vars and `queue_redraw()`
+- Add `var replay_mode: bool = false`
+- Add `func set_piece_instantly(player: int)`: forces cell to correct visual state (texture, visibility, scale) with no animation, no signal emissions
+- Add `func set_replay_mode(enabled: bool)`: sets `replay_mode` flag, disables cell clicks via `mouse_filter = MOUSE_FILTER_IGNORE`
 
-### 3. `scripts/ui_manager.gd` — Theme selector with persistence
+### 3. `scripts/board.gd` — Replay rendering
 
-- Add `_THEMES` constant — array of 4 Dictionaries: `{"name": "...", "bg": Color(...), "grid": Color(...)}`
-- Add `signal theme_changed(bg_color: Color, grid_color: Color)`
-- Add `@onready` refs for `theme_label`, `theme_selector`
-- `_populate_theme_selector()`: add items from `_THEMES`
-- `_load_saved_theme()` → `ConfigFile` read from `user://settings.cfg` (section `"settings"`, key `"theme_index"`, default `0`)
-- `_save_theme(index)` → `ConfigFile` write to `user://settings.cfg`
-- `_apply_theme(index)`: lookup theme, emit `theme_changed`, set dropdown selection, save index
-- In `_ready()`: call `_populate_theme_selector()`, then `call_deferred("_apply_initial_theme")` to avoid signal timing issues
-- Connect `theme_selector.item_selected` → `_apply_theme(index)`
+- Add `var replay_mode: bool = false`
+- Add `func set_replay_mode(enabled: bool)`: propagates to all cells
+- Add `func render_state_instantly()`: reads all cell values from `_state`, calls `set_piece_instantly()` on each cell, clears valid move dots and last-placed indicator, `queue_redraw()`
 
-### 4. `scripts/game_manager.gd` — Wire theme to board
+### 4. `scenes/game_manager.tscn` — Replay UI nodes
 
-- In `_ready()`: connect `ui_manager.theme_changed` → `_on_theme_changed(bg, gr)`
-- `_on_theme_changed()`: update `config` if present, call `board.apply_theme(bg, gr)`
+Add to `HBoxContainer` (sibling of RestartButton/PassButton):
+- `ReplayButton` (Button, text "Replay", `visible = false`, `layout_mode = 2`)
 
-### 5. `scenes/game_manager.tscn` — Add UI nodes
+Add after `HBoxContainer`, before `SettingsHBox`:
+- `ReplayHBox` (HBoxContainer, `visible = false`, `layout_mode = 2`, `alignment = 1`)
+  - `PrevButton` (Button, text "Prev", `layout_mode = 2`)
+  - `StepLabel` (Label, text "0/0", `layout_mode = 2`, `size_flags_horizontal = 3`, `horizontal_alignment = 1`)
+  - `NextButton` (Button, text "Next", `layout_mode = 2`)
+  - `ExitReplayButton` (Button, text "Exit", `layout_mode = 2`)
 
-Add to `SettingsHBox` (after `DifficultySelector`):
-- `ThemeLabel` (Label, text "Theme:", `layout_mode=2`, `size_flags_horizontal=3`)
-- `ThemeSelector` (OptionButton, `layout_mode=2`, `size_flags_horizontal=3`)
+### 5. `scripts/ui_manager.gd` — Replay signals and methods
 
-## Signal Timing
+- Add `@onready` refs: `replay_button`, `replay_hbox`, `prev_button`, `step_label`, `next_button`, `exit_replay_button`
+- Add signals: `replay_requested`, `replay_prev_requested`, `replay_next_requested`, `replay_exit_requested`
+- In `_ready()`: wire button pressed signals, set `replay_button.visible = false`, `replay_hbox.visible = false`
+- Add methods: `set_replay_button_visible(bool)`, `set_replay_controls_visible(bool)`, `update_step_label(current, total)`
 
-`UIManager._ready()` runs before `GameManager._ready()` (Godot depth-first). The initial theme must be applied with `call_deferred()` in ui_manager so the `theme_changed` signal fires AFTER game_manager has connected to it.
+### 6. `scripts/game_manager.gd` — Move recording and replay logic
 
-## Persistence
+- Add vars: `move_history: Array = []`, `replay_mode: bool = false`, `replay_index: int = -1`
+- In `init_game()`: clear `move_history`, reset replay flags
+- In `perform_move()`: append move dict to `move_history` before `await board.place_piece()`
+- In `switch_turn()` pass branch: append `{"pass": true, "player": current_player}` to history
+- In `switch_turn()` game-over branch: call `ui_manager.set_replay_button_visible(true)`
+- Add `enter_replay_mode()`: reset board to initial 4 pieces instantly, hide game controls, show replay controls, render initial position
+- Add `step_replay(direction)`: rebuild board from initial state through move `replay_index + direction`, render instantly, update step label and scores
+- Add `exit_replay_mode()`: rebuild final position, restore game-over UI
+- In `_on_move_attempted()`: guard with `if replay_mode: return`
+- In `_ready()`: wire `ui_manager.replay_requested`, `replay_prev_requested`, `replay_next_requested`, `replay_exit_requested`
 
-Theme index saved to `user://settings.cfg` via `ConfigFile`. Persists across full application restarts. Survives game restarts within the same session automatically since `board.apply_theme()` updates instance vars.
+## Step Counter Semantics
+
+- `replay_index = -1`: Initial position. Label: `0/N`
+- `replay_index = 0`: After first move. Label: `1/N`
+- `replay_index = N-1`: Final position. Label: `N/N`
+
+Pass entries increment the step counter but don't change the board.
+
+## UI Visibility Matrix
+
+| Element | Playing | Game-Over | Replay |
+|---------|---------|-----------|--------|
+| ScoreLabel | visible | visible | visible |
+| MessageLabel | hidden | visible | hidden |
+| TurnLabel | visible | visible | hidden |
+| RestartButton | hidden | visible | hidden |
+| ReplayButton | hidden | visible | hidden |
+| PassButton | conditional | hidden | hidden |
+| SettingsHBox | visible | visible | hidden |
+| ReplayHBox | hidden | hidden | visible |
 
 ## Verification
 
-1. **Default start**: Board shows Classic Green colors; dropdown shows "Classic Green"
-2. **Theme change at game-over**: Select "Dark Mode" → board immediately redraws with dark gray
-3. **Mid-game change**: After some pieces placed, change theme → board colors update, pieces unchanged
-4. **Persistence**: Close and relaunch → previously selected theme is active
-5. **Restart preserves theme**: Click Restart with "Wood" active → new game uses Wood colors
-6. **All four themes**: Cycle through all themes, verify distinct colors
+1. Play a full game to game-over → Replay button appears
+2. Click Replay → board shows initial 4 pieces, Prev/Next/Exit visible, step label `0/N`
+3. Click Next → board shows position after move 1, label `1/N`
+4. Click Prev → returns to initial position, label `0/N`
+5. Step through all moves → final position matches game-over board
+6. Click Exit → returns to game-over screen with score and Restart/Replay buttons
+7. Pass moves appear as distinct steps in replay (board unchanged, counter advances)
+8. Cell clicks are disabled during replay

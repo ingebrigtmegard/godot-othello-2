@@ -30,6 +30,11 @@ var message_ready: bool = true
 var white_ai_enabled: bool = true
 var _ai_enabled: bool = true
 
+# Replay state
+var move_history: Array = []
+var replay_mode: bool = false
+var replay_index: int = -1
+
 func _ready():
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if config:
@@ -50,6 +55,10 @@ func _ready():
 	ui_manager.ai_toggle_changed.connect(_on_ai_toggle_changed)
 	ui_manager.difficulty_changed.connect(_on_difficulty_changed)
 	ui_manager.theme_applied.connect(_on_theme_applied)
+	ui_manager.replay_requested.connect(_on_replay_requested)
+	ui_manager.replay_prev_requested.connect(_on_replay_prev_requested)
+	ui_manager.replay_next_requested.connect(_on_replay_next_requested)
+	ui_manager.replay_exit_requested.connect(_on_replay_exit_requested)
 
 	await init_game()
 
@@ -59,6 +68,13 @@ func init_game():
 	animating = false
 	message_ready = true
 	white_ai_enabled = _ai_enabled
+
+	move_history.clear()
+	replay_mode = false
+	replay_index = -1
+	board.set_replay_mode(false)
+	ui_manager.set_replay_button_visible(false)
+	ui_manager.set_replay_controls_visible(false)
 
 	board.set_cell(3, 3, WHITE)
 	board.set_cell(4, 4, WHITE)
@@ -80,7 +96,7 @@ func init_game():
 	game_started.emit()
 
 func _on_move_attempted(x: int, y: int):
-	if animating or not message_ready:
+	if replay_mode or animating or not message_ready:
 		return
 	for move in valid_moves:
 		if move.pos.x == x and move.pos.y == y:
@@ -88,12 +104,14 @@ func _on_move_attempted(x: int, y: int):
 			return
 
 func perform_move(x: int, y: int, flips: Array):
+	if not replay_mode:
+		move_history.append({"pos": Vector2i(x, y), "flips": flips, "player": current_player})
+
 	animating = true
 	ui_manager.set_pass_button_visible(false)
 	ui_manager.hide_settings()
 
 	_play_click()
-	# place_piece is now async — animations complete before returning
 	await board.place_piece(x, y, current_player, flips)
 	if flips.size() > 0:
 		_play_flip()
@@ -128,12 +146,16 @@ func switch_turn():
 			var result = get_game_over_message(score.black, score.white)
 			ui_manager.show_message(result)
 			ui_manager.set_restart_button_visible(true)
+			ui_manager.set_replay_button_visible(true)
 			ui_manager.show_settings()
 			game_over.emit(result)
 			_play_gameover()
+			ui_manager.set_pass_button_visible(false)
 			animating = false
 			return
 
+		if not replay_mode:
+			move_history.append({"pass": true, "player": current_player})
 		ui_manager.show_message("Pass!")
 		message_ready = false
 		await get_tree().create_timer(1.5).timeout
@@ -207,6 +229,8 @@ func _play_gameover():
 		sound_player.play()
 
 func _input(event):
+	if replay_mode:
+		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		print("GameManager click at ", event.position)
 		var pos = event.position
@@ -215,3 +239,95 @@ func _input(event):
 		if gx >= 0 and gx < board.board_size and gy >= 0 and gy < board.board_size:
 			print("Click on cell ", gx, ", ", gy)
 			board.move_attempted.emit(gx, gy)
+
+# --- Replay Methods ---
+
+func _on_replay_requested():
+	replay_mode = true
+	replay_index = -1
+
+	# Reset board to initial 4 pieces
+	board.reset_board()
+	board.set_cell(3, 3, WHITE)
+	board.set_cell(4, 4, WHITE)
+	board.set_cell(3, 4, BLACK)
+	board.set_cell(4, 3, BLACK)
+	board.render_state_instantly()
+	board.set_replay_mode(true)
+
+	var score = board.get_score()
+	ui_manager.update_scores(score.black, score.white)
+
+	ui_manager.set_replay_button_visible(false)
+	ui_manager.set_replay_controls_visible(true)
+	ui_manager.hide_message()
+	ui_manager.set_restart_button_visible(false)
+	ui_manager.set_pass_button_visible(false)
+	ui_manager.show_settings(false)
+
+	var total = move_history.size()
+	ui_manager.update_step_label(0, total)
+
+func step_replay(direction: int):
+	var total = move_history.size()
+	var new_index = replay_index + direction
+	if new_index < -1 or new_index >= total:
+		return
+
+	replay_index = new_index
+
+	# Rebuild board from initial state through replay_index
+	board.reset_board()
+	board.set_cell(3, 3, WHITE)
+	board.set_cell(4, 4, WHITE)
+	board.set_cell(3, 4, BLACK)
+	board.set_cell(4, 3, BLACK)
+
+	for i in (replay_index + 1):
+		var move = move_history[i]
+		if move.has("pass"):
+			continue
+		var state = board.get_state()
+		state.apply_move(move, move.player)
+
+	board.render_state_instantly()
+
+	var score = board.get_score()
+	ui_manager.update_scores(score.black, score.white)
+
+	ui_manager.update_step_label(replay_index + 1, total)
+
+func _on_replay_prev_requested():
+	step_replay(-1)
+
+func _on_replay_next_requested():
+	step_replay(1)
+
+func _on_replay_exit_requested():
+	replay_mode = false
+	replay_index = -1
+
+	# Rebuild final position
+	board.reset_board()
+	board.set_cell(3, 3, WHITE)
+	board.set_cell(4, 4, WHITE)
+	board.set_cell(3, 4, BLACK)
+	board.set_cell(4, 3, BLACK)
+
+	for move in move_history:
+		if move.has("pass"):
+			continue
+		var state = board.get_state()
+		state.apply_move(move, move.player)
+
+	board.render_state_instantly()
+	board.set_replay_mode(false)
+
+	var score = board.get_score()
+	ui_manager.update_scores(score.black, score.white)
+	var result = get_game_over_message(score.black, score.white)
+	ui_manager.show_message(result)
+	ui_manager.set_restart_button_visible(true)
+	ui_manager.set_replay_button_visible(true)
+	ui_manager.set_replay_controls_visible(false)
+	ui_manager.show_settings()

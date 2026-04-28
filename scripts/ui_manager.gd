@@ -12,12 +12,24 @@ extends Control
 @onready var theme_label: Label = $MarginContainer/VBoxContainer/SettingsHBox/ThemeLabel
 @onready var theme_selector: OptionButton = $MarginContainer/VBoxContainer/SettingsHBox/ThemeSelector
 
+# --- Replay UI references ---
+@onready var replay_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/ReplayButton
+@onready var replay_hbox: HBoxContainer = $MarginContainer/VBoxContainer/ReplayHBox
+@onready var prev_button: Button = $MarginContainer/VBoxContainer/ReplayHBox/PrevButton
+@onready var step_label: Label = $MarginContainer/VBoxContainer/ReplayHBox/StepLabel
+@onready var next_button: Button = $MarginContainer/VBoxContainer/ReplayHBox/NextButton
+@onready var exit_replay_button: Button = $MarginContainer/VBoxContainer/ReplayHBox/ExitReplayButton
+
 # --- Signals ---
 signal restart_requested
 signal pass_requested
 signal ai_toggle_changed(enabled: bool)
 signal difficulty_changed(depth: int)
 signal theme_applied(bg_color: Color, grid_color: Color)
+signal replay_requested
+signal replay_prev_requested
+signal replay_next_requested
+signal replay_exit_requested
 
 # --- Theme Definitions ---
 var _THEMES = [
@@ -38,9 +50,17 @@ func _ready():
 	ai_toggle_checkbox.toggled.connect(_on_ai_toggle_changed)
 	difficulty_selector.item_selected.connect(_on_difficulty_selected)
 	theme_selector.item_selected.connect(_on_theme_selected)
+
+	replay_button.pressed.connect(_on_replay_pressed)
+	prev_button.pressed.connect(_on_replay_prev_pressed)
+	next_button.pressed.connect(_on_replay_next_pressed)
+	exit_replay_button.pressed.connect(_on_replay_exit_pressed)
+
 	restart_button.visible = false
 	pass_button.visible = false
 	message_label.visible = false
+	replay_button.visible = false
+	replay_hbox.visible = false
 	# Defer initial theme application so game_manager can connect to theme_applied first
 	call_deferred("_apply_initial_theme")
 
@@ -60,8 +80,8 @@ func populate_difficulty_selector():
 func hide_settings():
 	settings_hbox.visible = false
 
-func show_settings():
-	settings_hbox.visible = true
+func show_settings(p_visible: bool = true):
+	settings_hbox.visible = p_visible
 
 func _on_ai_toggle_changed(p_pressed: bool):
 	ai_toggle_changed.emit(p_pressed)
@@ -127,3 +147,24 @@ func _apply_initial_theme():
 
 func _on_theme_selected(index: int):
 	_apply_theme(index)
+
+func set_replay_button_visible(p_visible: bool):
+	replay_button.visible = p_visible
+
+func set_replay_controls_visible(p_visible: bool):
+	replay_hbox.visible = p_visible
+
+func update_step_label(current: int, total: int):
+	step_label.text = "%d/%d" % [current, total]
+
+func _on_replay_pressed():
+	replay_requested.emit()
+
+func _on_replay_prev_pressed():
+	replay_prev_requested.emit()
+
+func _on_replay_next_pressed():
+	replay_next_requested.emit()
+
+func _on_replay_exit_pressed():
+	replay_exit_requested.emit()

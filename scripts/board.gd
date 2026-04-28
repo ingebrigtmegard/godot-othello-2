@@ -29,6 +29,9 @@ var _pending_animations: Array = []
 var _animations_done_count: int = 0
 var _placement_deferred_data: Dictionary = {}
 
+# Replay mode
+var replay_mode: bool = false
+
 func _ready():
 	if config:
 		board_offset = config.board_offset
@@ -180,6 +183,21 @@ func get_score() -> Dictionary:
 func apply_theme(bg_color: Color, gr_color: Color):
 	board_bg_color = bg_color
 	grid_color = gr_color
+	queue_redraw()
+
+func set_replay_mode(enabled: bool):
+	replay_mode = enabled
+	for cell in cells:
+		cell.set_replay_mode(enabled)
+
+func render_state_instantly():
+	for cell in cells:
+		cell.set_valid_move(false)
+	_last_placed_pos = Vector2i(-1, 1)
+	for y in board_size:
+		for x in board_size:
+			var cell_value = get_cell(x, y)
+			cells[y * board_size + x].set_piece_instantly(cell_value)
 	queue_redraw()
 
 func _draw():

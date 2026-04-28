@@ -64,7 +64,7 @@ func undo_move(undo_data: Dictionary) -> void:
 	var flips: Array = undo_data.flips
 	var player: int = undo_data.player
 	var opponent: int = GameConstants.WHITE if player == GameConstants.BLACK else GameConstants.BLACK
-	set_cell(pos.x, pos.y, opponent)
+	set_cell(pos.x, pos.y, GameConstants.EMPTY)
 	for f in flips:
 		set_cell(f.x, f.y, opponent)
 

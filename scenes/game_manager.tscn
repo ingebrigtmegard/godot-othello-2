@@ -85,6 +85,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Pass"
 
+[node name="ReplayButton" type="Button" parent="UIManager/MarginContainer/VBoxContainer/HBoxContainer" unique_id=2020129125]
+visible = false
+layout_mode = 2
+text = "Replay"
+
 [node name="SettingsHBox" type="HBoxContainer" parent="UIManager/MarginContainer/VBoxContainer" unique_id=92780122]
 layout_mode = 2
 
@@ -110,5 +115,25 @@ text = "Theme:"
 
 [node name="ThemeSelector" type="OptionButton" parent="UIManager/MarginContainer/VBoxContainer/SettingsHBox" unique_id=2008377266]
 layout_mode = 2
+
+[node name="ReplayHBox" type="HBoxContainer" parent="UIManager/MarginContainer/VBoxContainer" unique_id=146673791]
+visible = false
+layout_mode = 2
+
+[node name="PrevButton" type="Button" parent="UIManager/MarginContainer/VBoxContainer/ReplayHBox" unique_id=546420042]
+layout_mode = 2
+text = "Prev"
+
+[node name="StepLabel" type="Label" parent="UIManager/MarginContainer/VBoxContainer/ReplayHBox" unique_id=573793415]
+layout_mode = 2
+text = "0/0"
+
+[node name="NextButton" type="Button" parent="UIManager/MarginContainer/VBoxContainer/ReplayHBox" unique_id=2141784440]
+layout_mode = 2
+text = "Next"
+
+[node name="ExitReplayButton" type="Button" parent="UIManager/MarginContainer/VBoxContainer/ReplayHBox" unique_id=2054160451]
+layout_mode = 2
+text = "Exit"
 
 [node name="SoundPlayer" type="AudioStreamPlayer" parent="." unique_id=398628684]
